@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zooming Circles Illusion</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #111; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+            /* Optional border for visibility */
+            /* border: 1px solid #555; */
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Concentric circle zoom illusion</div>
+    <canvas id="illusionCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('illusionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const numCircles = 30; // Number of circles to animate
+        const maxRadius = Math.min(window.innerWidth, window.innerHeight) * 0.6; // Max size based on window
+        const minRadius = 1;
+        const speed = 1; // How fast the circles shrink (pixels per frame)
+        let baseHue = 0; // Starting color hue (0-360)
+
+        let circles = [];
+
+        // --- Circle Object ---
+        class Circle {
+            constructor(radius, hue) {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.radius = radius;
+                this.hue = hue; // Store individual hue
+                this.lineWidth = 2; // Adjust line thickness if desired
+            }
+
+            update() {
+                // Shrink the circle
+                this.radius -= speed;
+
+                // Reset if it gets too small
+                if (this.radius < minRadius) {
+                    this.radius = maxRadius; // Reset to the outside
+                    // Optional: slightly change hue on reset for color cycling
+                    this.hue = (baseHue + circles.indexOf(this) * (360 / numCircles)) % 360;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `hsl(${this.hue}, 100%, 60%)`; // Use HSL for easy color changes
+                ctx.lineWidth = this.lineWidth;
+                ctx.stroke();
+            }
+        }
+
+        // --- Initialization ---
+        function init() {
+            // Set canvas size
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.9;
+
+            // Center coordinates might change if canvas size changes
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            circles = []; // Clear existing circles if resizing
+
+            // Create circles with staggered radii
+            for (let i = 0; i < numCircles; i++) {
+                // Distribute initial radii evenly from minRadius to maxRadius
+                const startRadius = minRadius + (maxRadius - minRadius) * (i / numCircles);
+                // Distribute initial hues
+                const startHue = (baseHue + i * (360 / numCircles)) % 360;
+                const circle = new Circle(startRadius, startHue);
+                circle.x = centerX; // Ensure center is updated
+                circle.y = centerY; // Ensure center is updated
+                circles.push(circle);
+            }
+             // Sort circles initially by radius (descending) so larger ones are drawn first (optional)
+             circles.sort((a, b) => b.radius - a.radius);
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate); // Loop the animation
+
+            // Clear the canvas (or use semi-transparent clear for trails)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Optional: Fading effect instead of clearRect
+            // ctx.fillStyle = 'rgba(17, 17, 17, 0.1)'; // Adjust alpha for trail length
+            // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+            // Update base hue slightly for slow color cycling effect
+            baseHue = (baseHue + 0.1) % 360;
+
+            // Update and draw each circle
+            // Iterate backwards so resetting doesn't mess up hue calculation based on index (if used)
+            for (let i = circles.length - 1; i >= 0; i--) {
+                circles[i].update();
+                circles[i].draw();
+            }
+
+
+        }
+
+        // --- Event Listener for Resize ---
+        window.addEventListener('resize', init);
+
+        // --- Start ---
+        init(); // Initialize on load
+        animate(); // Start the animation loop
+
+    </script>
+</body>
+</html>
